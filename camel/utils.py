@@ -84,7 +84,7 @@ def num_tokens_from_messages(
 
     if model in {
         ModelType.GPT_3_5_TURBO,
-        ModelType.GPT_3_5_TURBO_NEW,
+        # ModelType.GPT_3_5_TURBO_NEW,
         ModelType.GPT_4,
         ModelType.GPT_4_32k,
         ModelType.GPT_4_TURBO,

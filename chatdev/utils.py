@@ -7,12 +7,24 @@ import markdown
 import inspect
 from camel.messages.system_messages import SystemMessage
 from visualizer.app import send_msg
+from visualizer.app import send_msg
 
 
 def now():
     return time.strftime("%Y%m%d%H%M%S", time.localtime())
 
 
+def log_visualize(role, content=None):
+    """
+    send the role and content to visualizer server to show log on webpage in real-time
+    You can leave the role undefined and just pass the content, i.e. log_visualize("messages"), where the role is "System".
+    Args:
+        role: the agent that sends message
+        content: the content of message
+
+    Returns: None
+
+    """
 def log_visualize(role, content=None):
     """
     send the role and content to visualizer server to show log on webpage in real-time
@@ -36,6 +48,7 @@ def log_visualize(role, content=None):
             content.meta_dict["content"] = content.content
             for key in content.meta_dict:
                 value = content.meta_dict[key]
+                value = escape_string(value)
                 value = escape_string(value)
                 records_kv.append([key, value])
             content = "**[SystemMessage**]\n\n" + convert_to_markdown_table(records_kv)
@@ -72,13 +85,23 @@ def log_arguments(func):
             if name in ["self", "chat_env", "task_type"]:
                 continue
             value = escape_string(value)
+            value = escape_string(value)
             records_kv.append([name, value])
         records = f"**[{func.__name__}]**\n\n" + convert_to_markdown_table(records_kv)
+        log_visualize("System", records)
         log_visualize("System", records)
 
         return func(*args, **kwargs)
 
     return wrapper
+
+def escape_string(value):
+    value = str(value)
+    value = html.unescape(value)
+    value = markdown.markdown(value)
+    value = re.sub(r'<[^>]*>', '', value)
+    value = value.replace("\n", " ")
+    return value
 
 def escape_string(value):
     value = str(value)

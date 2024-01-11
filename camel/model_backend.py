@@ -21,20 +21,25 @@ from camel.typing import ModelType
 from chatdev.statistics import prompt_cost
 from chatdev.utils import log_visualize
 
-try:
-    from openai.types.chat import ChatCompletion
+# try:
+#     from openai.types.chat import ChatCompletion
 
-    openai_new_api = True  # new openai api version
-except ImportError:
-    openai_new_api = False  # old openai api version
+#     openai_new_api = True  # new openai api version
+# except ImportError:
+#     openai_new_api = False  # old openai api version
+
+# Fix openai new api to be true
+openai_new_api = True
 
 import os
 
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-if 'BASE_URL' in os.environ:
-    BASE_URL = os.environ['BASE_URL']
-else:
-    BASE_URL = None
+# 代理api的url
+BASE_URL = "https://oneapi.xty.app/v1"
+# if 'BASE_URL' in os.environ:
+#     BASE_URL = os.environ['BASE_URL']
+# else:
+#     BASE_URL = None
 
 
 class ModelBackend(ABC):
@@ -77,6 +82,13 @@ class OpenAIModel(ModelBackend):
                     api_key=OPENAI_API_KEY,
                     base_url=BASE_URL,
                 )
+                # api_base = {
+                #     "gpt-3.5-turbo": "https://oneapi.xty.app/v1",
+                #     "gpt-4": "https://oneapi.xty.app/v1",
+                #     "vicuna": VICUNA_URL,
+                # }
+                # openai.api_base = api_base[model]
+                # print(f"current ulr is {BASE_URL}")
             else:
                 client = openai.OpenAI(
                     api_key=OPENAI_API_KEY
@@ -110,8 +122,8 @@ class OpenAIModel(ModelBackend):
                 "**[OpenAI_Usage_Info Receive]**\nprompt_tokens: {}\ncompletion_tokens: {}\ntotal_tokens: {}\ncost: ${:.6f}\n".format(
                     response.usage.prompt_tokens, response.usage.completion_tokens,
                     response.usage.total_tokens, cost))
-            if not isinstance(response, ChatCompletion):
-                raise RuntimeError("Unexpected return from OpenAI API")
+            # if not isinstance(response, ChatCompletion):
+            #     raise RuntimeError("Unexpected return from OpenAI API")
             return response
         else:
             num_max_token_map = {
@@ -129,13 +141,26 @@ class OpenAIModel(ModelBackend):
 
             response = openai.ChatCompletion.create(*args, **kwargs, model=self.model_type.value,
                                                     **self.model_config_dict)
+            response = openai.ChatCompletion.create(*args, **kwargs, model=self.model_type.value,
+                                                    **self.model_config_dict)
 
+            cost = prompt_cost(
+                self.model_type.value,
+                num_prompt_tokens=response["usage"]["prompt_tokens"],
             cost = prompt_cost(
                 self.model_type.value,
                 num_prompt_tokens=response["usage"]["prompt_tokens"],
                 num_completion_tokens=response["usage"]["completion_tokens"]
             )
+            )
 
+            log_visualize(
+                "**[OpenAI_Usage_Info Receive]**\nprompt_tokens: {}\ncompletion_tokens: {}\ntotal_tokens: {}\ncost: ${:.6f}\n".format(
+                    response["usage"]["prompt_tokens"], response["usage"]["completion_tokens"],
+                    response["usage"]["total_tokens"], cost))
+            if not isinstance(response, Dict):
+                raise RuntimeError("Unexpected return from OpenAI API")
+            return response
             log_visualize(
                 "**[OpenAI_Usage_Info Receive]**\nprompt_tokens: {}\ncompletion_tokens: {}\ntotal_tokens: {}\ncost: ${:.6f}\n".format(
                     response["usage"]["prompt_tokens"], response["usage"]["completion_tokens"],
@@ -174,25 +199,30 @@ class ModelFactory:
     @staticmethod
     def create(model_type: ModelType, model_config_dict: Dict) -> ModelBackend:
         default_model_type = ModelType.GPT_3_5_TURBO
+        # Fix model type and model class
+        model_type = default_model_type
+        model_class = OpenAIModel
+        print(f"current model type is {model_type}")
 
-        if model_type in {
-            ModelType.GPT_3_5_TURBO,
-            ModelType.GPT_3_5_TURBO_NEW,
-            ModelType.GPT_4,
-            ModelType.GPT_4_32k,
-            ModelType.GPT_4_TURBO,
-            ModelType.GPT_4_TURBO_V,
-            None
-        }:
-            model_class = OpenAIModel
-        elif model_type == ModelType.STUB:
-            model_class = StubModel
-        else:
-            raise ValueError("Unknown model")
+        # if model_type in {
+        #     ModelType.GPT_3_5_TURBO,
+        #     ModelType.GPT_3_5_TURBO_NEW,
+        #     ModelType.GPT_4,
+        #     ModelType.GPT_4_32k,
+        #     ModelType.GPT_4_TURBO,
+        #     ModelType.GPT_4_TURBO_V,
+        #     None
+        # }:
+        #     model_class = OpenAIModel
+        # elif model_type == ModelType.STUB:
+        #     model_class = StubModel
+        # else:
+        #     raise ValueError("Unknown model")
 
-        if model_type is None:
-            model_type = default_model_type
+        # if model_type is None:
+        #     model_type = default_model_type
 
+        # log_visualize("Model Type: {}".format(model_type))
         # log_visualize("Model Type: {}".format(model_type))
         inst = model_class(model_type, model_config_dict)
         return inst

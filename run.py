@@ -97,7 +97,8 @@ args2type = {'GPT_3_5_TURBO': ModelType.GPT_3_5_TURBO,
              'GPT_4_TURBO_V': ModelType.GPT_4_TURBO_V
              }
 if openai_new_api:
-    args2type['GPT_3_5_TURBO'] = ModelType.GPT_3_5_TURBO_NEW
+    # args2type['GPT_3_5_TURBO'] = ModelType.GPT_3_5_TURBO_NEW
+    args2type['GPT_3_5_TURBO'] = ModelType.GPT_3_5_TURBO
 
 chat_chain = ChatChain(config_path=config_path,
                        config_phase_path=config_phase_path,
